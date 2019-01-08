@@ -27,6 +27,11 @@ def home():
 def iperf():
     return "Running iperf test"
 
+@app.route("/runclient")
+def runclient():
+    client = Client()
+    return client 
+
 try:
     from queue import Queue
 except ImportError:
