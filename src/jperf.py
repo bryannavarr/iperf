@@ -366,7 +366,7 @@ class IPerf3(object):
         raise NotImplementedError
 
 # api.add_resource('/client', methods=['GET', 'POST'])
-@app.route('/client', methods=['GET','POST'])
+#@app.route('/client', methods=['GET','POST'])
 class Client(IPerf3):
     # """An iperf3 client connection.
 
@@ -384,7 +384,7 @@ class Client(IPerf3):
     #   {'intervals': [{'sum': {...
     # """
     
-    # @app.route('/client', methods=['GET','POST'])
+   # @app.route('/client', methods=['GET','POST'])
     def __init__(self, *args, **kwargs):
         # """Initialise the iperf shared library"""
         super(Client, self).__init__(role='c', *args, **kwargs)
@@ -708,4 +708,4 @@ class TestResult(object):
 # api.add_resource(Server, '/server')
 
 if __name__ == "__main__":
-    app.run(host='10.11.170.14', port='5001', debug=True)
+    app.run(host='10.11.170.14',port='5001', debug=True)
