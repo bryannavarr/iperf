@@ -10,7 +10,7 @@ import select
 import json
 import threading
 
-app = Flask('main')
+app = Flask(__name__)
 api = Api(app)
 
 
@@ -621,4 +621,4 @@ class TestResult(object):
 # api.add_resource(Server, '/server')
 
 if __name__ == "__main__":
-    app.run(port='5001', debug=True)
+    app.run(host='10.11.170.14', port='5001', debug=True)
