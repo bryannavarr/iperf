@@ -16,8 +16,8 @@ api = Api(app)
 
 
 
-# api.add_resource(Client, '/client')
-# api.add_resource(Server, '/server')
+#api.add_resource(Client, '/client')
+#api.add_resource(Server, '/server')
 
 @app.route("/")
 def home():
@@ -27,10 +27,20 @@ def home():
 def iperf():
     return "Running iperf test"
 
+#@app.route("/runclient", methods=['GET'] )
 @app.route("/runclient")
-def runclient():
+def runtest():
     client = Client()
-    return client 
+    #client.start()
+    client.duration = 1
+    client.server_hostname = "10.11.170.14"
+    client.port = 5001
+    print "client running"
+    client.run()
+    server = Server()
+    server.start()
+    print "server test running"
+    return "test is done"
 
 try:
     from queue import Queue
@@ -389,7 +399,7 @@ class Client(IPerf3):
     #   {'intervals': [{'sum': {...
     # """
     
-   # @app.route('/client', methods=['GET','POST'])
+  #  @app.route('/client', methods=['GET','POST'])
     def __init__(self, *args, **kwargs):
         # """Initialise the iperf shared library"""
         super(Client, self).__init__(role='c', *args, **kwargs)
@@ -519,6 +529,7 @@ class Client(IPerf3):
         output_to_screen(self._stdout_fd, self._stderr_fd)
 
         return TestResult(data)
+	print TestResult(data)
 
 # api.add_resource('/server', methods=['GET', 'POST'])
 class Server(IPerf3):
@@ -709,8 +720,8 @@ class TestResult(object):
         # """Print the result as received from iperf3"""
         return self.text
 
-# api.add_resource(Client, '/client')
-# api.add_resource(Server, '/server')
+#api.add_resource(Client, '/client')
+#api.add_resource(Server, '/server')
 
 if __name__ == "__main__":
     app.run(host='10.11.170.14',port='5001', debug=True)
