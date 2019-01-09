@@ -15,7 +15,6 @@ app = Flask(__name__)
 api = Api(app)
 
 
-
 #api.add_resource(Client, '/client')
 #api.add_resource(Server, '/server')
 
@@ -23,45 +22,50 @@ api = Api(app)
 def home():
     return "Hi World!"
 
+
 @app.route("/iperf")
 def iperf():
     return "Running iperf test"
 
-#@app.route("/runclient", methods=['GET'] )
+# @app.route("/runclient", methods=['GET'] )
+
+
 @app.route("/runclient")
 def runtest():
-    print 'starting test'
+    print ('starting test')
     client = Client()
-    client.duration = 1 
+    client.duration = 1
     client.server_hostname = '10.11.170.14'
     client.port = 5000
     client.protocol = 'tcp'
     print('Connecting to {0}:{1}'.format(client.server_hostname, client.port))
     result = client.run()
-    
+
     if result.error:
-	print(result.error)
+        print(result.error)
     else:
-	print('')
+        print('')
         print('Test Completed')
-        print ('started at         {0}'.format(result.time))
-	print ('bytes transmitted  {0}'.format(result.bytes))
-	print ('jitter (ms)        {0}'.format(result.jitter_ms))
-        print ('avg cpu load       {0}%\n'.format(result.local_cpu_total))
-      
+        print('started at         {0}'.format(result.time))
+        print('bytes transmitted  {0}'.format(result.bytes))
+        print('jitter (ms)        {0}'.format(result.jitter_ms))
+        print('avg cpu load       {0}%\n'.format(result.local_cpu_total))
+
+
 @app.route("/runserver")
 def servertest():
-    print "starting server"
+    print ("starting server")
     server = iperf3.Server()
-    server.bind_address='0.0.0.0'
+    server.bind_address = '0.0.0.0'
     server.port = 5000
     server.verbose = False
-    while True: 
-      result = server.run()
-      if result.error:
-	print(result.error)
-      else:
-	print result
+    while True:
+        result = server.run()
+        if result.error:
+            print(result.error)
+        else:
+            print (result)
+
 
 try:
     from queue import Queue
@@ -71,6 +75,7 @@ except ImportError:
 __version__ = '0.1.2'
 
 MAX_UDP_BULKSIZE = (65535 - 8 - 20)
+
 
 def more_data(pipe_out):
     # """Check if there is more data left on the pipe
@@ -115,6 +120,7 @@ def output_to_screen(stdout_fd, stderr_fd):
     os.dup2(stdout_fd, 1)
     #os.dup2(stderr_fd, 2)
 
+
 class IPerf3(object):
     # """The base class used by both the iperf3 :class:`Server` and :class:`Client`
 
@@ -135,13 +141,14 @@ class IPerf3(object):
         if lib_name is None:
             lib_name = util.find_library('libiperf')
             if lib_name is None:
-                #If we still can't find it lets try the manual approach
+                # If we still can't find it lets try the manual approach
                 lib_name = 'libiperf.so.0'
 
         try:
             self.lib = cdll.LoadLibrary(lib_name)
         except OSError:
-            raise OSError('Could not find shared library {0}. Is iperf3 installed?'.format(lib_name))
+            raise OSError(
+                'Could not find shared library {0}. Is iperf3 installed?'.format(lib_name))
 
             # Set the appropriate C types.
         self.lib.iperf_client_end.restype = c_int
@@ -268,9 +275,11 @@ class IPerf3(object):
         # :rtype: 'c' or 's'
         # """
         try:
-            self._role = c_char(self.lib.iperf_get_test_role(self._test)).value.decode('utf-8')
+            self._role = c_char(self.lib.iperf_get_test_role(
+                self._test)).value.decode('utf-8')
         except TypeError:
-            self._role = c_char(chr(self.lib.iperf_get_test_role(self._test))).value.decode('utf-8')
+            self._role = c_char(
+                chr(self.lib.iperf_get_test_role(self._test))).value.decode('utf-8')
         return self._role
 
     @role.setter
@@ -289,7 +298,8 @@ class IPerf3(object):
         # use * to listen on all available IPs
         # :rtype: string
         # """
-        result = c_char_p(self.lib.iperf_get_test_bind_address(self._test)).value
+        result = c_char_p(
+            self.lib.iperf_get_test_bind_address(self._test)).value
         if result:
             self._bind_address = result.decode('utf-8')
         else:
@@ -403,7 +413,9 @@ class IPerf3(object):
         raise NotImplementedError
 
 # api.add_resource('/client', methods=['GET', 'POST'])
-#@app.route('/client', methods=['GET','POST'])
+# @app.route('/client', methods=['GET','POST'])
+
+
 class Client(IPerf3):
     # """An iperf3 client connection.
 
@@ -420,7 +432,7 @@ class Client(IPerf3):
     #   >>> client.run()
     #   {'intervals': [{'sum': {...
     # """
-    
+
   #  @app.route('/client', methods=['GET','POST'])
     def __init__(self, *args, **kwargs):
         # """Initialise the iperf shared library"""
@@ -440,7 +452,8 @@ class Client(IPerf3):
         # Accepts DNS entries or IP addresses
         # :rtype: string
         # """
-        result = c_char_p(self.lib.iperf_get_test_server_hostname(self._test)).value
+        result = c_char_p(
+            self.lib.iperf_get_test_server_hostname(self._test)).value
         if result:
             self._server_hostname = result.decode('utf-8')
         else:
@@ -452,30 +465,30 @@ class Client(IPerf3):
         self.lib.iperf_set_test_server_hostname(self._test,
                                                 c_char_p(hostname.encode('utf-8')))
         self._server_hostname = hostname
-    
+
     @property
     def protocol(self):
-	#The iperf3 instance protocol, valid protocols are tcp and upd
-	proto_id = self.lib.iperf_get_test_protocol_id(self._test)
-	
-	if proto_id == SOCK_STREAM:
-		self._protocol= 'tcp'
-	elif proto_id == SOCK_DGRAM:
-		self._protocol = 'udp'
+        # The iperf3 instance protocol, valid protocols are tcp and upd
+        proto_id = self.lib.iperf_get_test_protocol_id(self._test)
 
-	return self._protocol
+        if proto_id == SOCK_STREAM:
+            self._protocol = 'tcp'
+        elif proto_id == SOCK_DGRAM:
+            self._protocol = 'udp'
+
+        return self._protocol
 
     @protocol.setter
     def protocol(self, protocol):
-	if protocol == 'tcp':
-		self.lib.set_protocol(self._test, int(SOCK_STREAM))
-	elif protocol == 'udp':
-		self.lib.set_protocl(selt._test, int(SOCK_DGRAM))
-		
-		if self.blksize > MAX_UDP_BULKSIZE:
-			self.blksize = MAX_UDP_BULKSIZE
+        if protocol == 'tcp':
+            self.lib.set_protocol(self._test, int(SOCK_STREAM))
+        elif protocol == 'udp':
+            self.lib.set_protocl(selt._test, int(SOCK_DGRAM))
 
-		self._protocol = protocol
+            if self.blksize > MAX_UDP_BULKSIZE:
+                self.blksize = MAX_UDP_BULKSIZE
+
+            self._protocol = protocol
 
     @property
     def duration(self):
@@ -575,7 +588,7 @@ class Client(IPerf3):
         output_to_screen(self._stdout_fd, self._stderr_fd)
 
         return TestResult(data)
-	
+
 
 # api.add_resource('/server', methods=['GET', 'POST'])
 class Server(IPerf3):
@@ -640,7 +653,8 @@ class Server(IPerf3):
             t.join(.1)
 
         return TestResult(data_queue.get())
-     	response = server.run()
+        response = server.run()
+
 
 class TestResult(object):
     # """Class containing iperf3 test results
@@ -724,23 +738,62 @@ class TestResult(object):
             self.omit = self.json['start']['test_start']['omit']
             self.duration = self.json['start']['test_start']['duration']
 
-            # test results
-            self.sent_bytes = self.json['end']['sum_sent']['bytes']
-            self.sent_bps = self.json['end']['sum_sent']['bits_per_second']
-            self.sent_kbps = self.sent_bps / 1024           # Kilobits per second
-            self.sent_Mbps = self.sent_kbps / 1024          # Megabits per second
-            self.sent_kB_s = self.sent_kbps / 8             # kiloBytes per second
-            self.sent_MB_s = self.sent_Mbps / 8             # MegaBytes per second
+            # system performance
+            cpu_utilization_perc = self.json['end']['cpu_utilization_percent']
+            self.local_cpu_total = cpu_utilization_perc['host_total']
+            self.local_cpu_user = cpu_utilization_perc['host_user']
+            self.local_cpu_system = cpu_utilization_perc['host_system']
+            self.remote_cpu_total = cpu_utilization_perc['remote_total']
+            self.remote_cpu_user = cpu_utilization_perc['remote_user']
+            self.remote_cpu_system = cpu_utilization_perc['remote_system']
 
-            self.received_bytes = self.json['end']['sum_received']['bytes']
-            self.received_bps = self.json['end']['sum_received']['bits_per_second']
-            self.received_kbps = self.received_bps / 1024   # Kilobits per second
-            self.received_Mbps = self.received_kbps / 1024  # Megabits per second
-            self.received_kB_s = self.received_kbps / 8     # kiloBytes per second
-            self.received_MB_s = self.received_Mbps / 8     # MegaBytes per second
+# TCP specific test results
+            if self.protocol == 'TCP':
+                sent_json = self.json['end']['sum_sent']
+                self.sent_bytes = sent_json['bytes']
+                self.sent_bps = sent_json['bits_per_second']
+
+                recv_json = self.json['end']['sum_received']
+                self.received_bytes = recv_json['bytes']
+                self.received_bps = recv_json['bits_per_second']
+
+                # Bits are measured in 10**3 terms
+                # Bytes are measured in 2**10 terms
+                # kbps = Kilobits per second
+                # Mbps = Megabits per second
+                # kB_s = kiloBytes per second
+                # MB_s = MegaBytes per second
+
+                self.sent_kbps = self.sent_bps / 1000
+                self.sent_Mbps = self.sent_kbps / 1000
+                self.sent_kB_s = self.sent_bps / (8 * 1024)
+                self.sent_MB_s = self.sent_kB_s / 1024
+
+                self.received_kbps = self.received_bps / 1000
+                self.received_Mbps = self.received_kbps / 1000
+                self.received_kB_s = self.received_bps / (8 * 1024)
+                self.received_MB_s = self.received_kB_s / 1024
+
+                # retransmits only returned from client
+                self.retransmits = sent_json.get('retransmits')
+
+            # UDP specific test results
+            elif self.protocol == 'UDP':
+                self.bytes = self.json['end']['sum']['bytes']
+                self.bps = self.json['end']['sum']['bits_per_second']
+                self.jitter_ms = self.json['end']['sum']['jitter_ms']
+                self.kbps = self.bps / 1000
+                self.Mbps = self.kbps / 1000
+                self.kB_s = self.kbps / (8 * 1024)
+                self.MB_s = self.Mbps / 1024
+                self.packets = self.json['end']['sum']['packets']
+                self.lost_packets = self.json['end']['sum']['lost_packets']
+                self.lost_percent = self.json['end']['sum']['lost_percent']
+                self.seconds = self.json['end']['sum']['seconds']
 
             # retransmits only returned from client
-            self.retransmits = self.json['end']['sum_sent'].get('retransmits', None)
+            self.retransmits = self.json['end']['sum_sent'].get(
+                'retransmits', None)
 
             self.local_cpu_total = self.json['end']['cpu_utilization_percent']['host_total']
             self.local_cpu_user = self.json['end']['cpu_utilization_percent']['host_user']
@@ -767,8 +820,6 @@ class TestResult(object):
         # """Print the result as received from iperf3"""
         return self.text
 
-#api.add_resource(Client, '/client')
-#api.add_resource(Server, '/server')
 
 if __name__ == "__main__":
-    app.run(host='10.11.170.14',port='5001', debug=True)
+    app.run(host='10.11.170.14', port='5001', debug=True)
