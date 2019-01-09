@@ -14,6 +14,7 @@ import threading
 app = Flask(__name__)
 api = Api(app)
 
+
 @app.route("/")
 def home():
     return "Hi World!"
@@ -28,7 +29,7 @@ def iperf():
 
 @app.route("/runclient")
 def runtest():
-    print ('starting test')
+    print('starting test')
     client = iperf3.Client()
     client.duration = 1
     client.server_hostname = '10.11.170.14'
@@ -50,7 +51,7 @@ def runtest():
 
 @app.route("/runserver")
 def servertest():
-    print ("starting server")
+    print("starting server")
     server = iperf3.Server()
     server.bind_address = '0.0.0.0'
     server.port = 5001
@@ -60,7 +61,7 @@ def servertest():
         if result.error:
             print(result.error)
         else:
-            print (result)
+            print(result)
 
 
 try:
@@ -244,6 +245,11 @@ class IPerf3(object):
 
     def __del__(self):
         # """Cleanup the test after the :class:`IPerf3` class is terminated"""
+        os.close(self._stdout_fd)
+        os.close(self._stderr_fd)
+        os.close(self._pipe_out)
+        os.close(self._pipe_in)
+
         try:
             self.lib.iperf_free_test(self._test)
         except AttributeError:
@@ -305,8 +311,9 @@ class IPerf3(object):
 
     @bind_address.setter
     def bind_address(self, address):
-        self.lib.iperf_set_test_bind_address(self._test,
-                                             c_char_p(address.encode('utf-8')))
+        self.lib.iperf_set_test_bind_address(
+            self._test,
+            c_char_p(address.encode('utf-8')))
         self._bind_address = address
 
     @property
@@ -407,9 +414,6 @@ class IPerf3(object):
         # :rtype: NotImplementedError
         # """
         raise NotImplementedError
-
-# api.add_resource('/client', methods=['GET', 'POST'])
-# @app.route('/client', methods=['GET','POST'])
 
 
 class Client(IPerf3):
@@ -638,7 +642,7 @@ class Server(IPerf3):
             self.lib.iperf_reset_test(self._test)
 
             data_queue.put(data)
-
+    if self.json_output:
         data_queue = Queue()
 
         t = threading.Thread(target=_run_in_thread, args=[self, data_queue])
@@ -647,6 +651,14 @@ class Server(IPerf3):
         t.start()
         while t.is_alive():
             t.join(.1)
+        return TestResult(data_queue.get())
+    else:
+        # setting json_output to False will output test to screen only
+        self.lib.iperf_run_server(self._test)
+        self.lib.iperf_reset_test(self._test)
+
+        return None
+
 
 class TestResult(object):
     # """Class containing iperf3 test results
@@ -814,4 +826,4 @@ class TestResult(object):
 
 
 if __name__ == "__main__":
-    app.run( port='5003', debug=True)
+    app.run(port='5003', debug=True)
