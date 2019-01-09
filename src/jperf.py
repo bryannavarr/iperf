@@ -14,10 +14,6 @@ import threading
 app = Flask(__name__)
 api = Api(app)
 
-
-#api.add_resource(Client, '/client')
-#api.add_resource(Server, '/server')
-
 @app.route("/")
 def home():
     return "Hi World!"
@@ -483,12 +479,12 @@ class Client(IPerf3):
         if protocol == 'tcp':
             self.lib.set_protocol(self._test, int(SOCK_STREAM))
         elif protocol == 'udp':
-            self.lib.set_protocl(selt._test, int(SOCK_DGRAM))
+            self.lib.set_protocol(self._test, int(SOCK_DGRAM))
 
             if self.blksize > MAX_UDP_BULKSIZE:
                 self.blksize = MAX_UDP_BULKSIZE
 
-            self._protocol = protocol
+        self._protocol = protocol
 
     @property
     def duration(self):
@@ -651,10 +647,6 @@ class Server(IPerf3):
         t.start()
         while t.is_alive():
             t.join(.1)
-
-        return TestResult(data_queue.get())
-        response = server.run()
-
 
 class TestResult(object):
     # """Class containing iperf3 test results
