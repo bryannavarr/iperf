@@ -29,10 +29,10 @@ def iperf():
 @app.route("/runclient")
 def runtest():
     print ('starting test')
-    client = Client()
+    client = iperf3.Client()
     client.duration = 1
     client.server_hostname = '10.11.170.14'
-    client.port = 5000
+    client.port = 5001
     client.protocol = 'tcp'
     print('Connecting to {0}:{1}'.format(client.server_hostname, client.port))
     result = client.run()
@@ -53,7 +53,7 @@ def servertest():
     print ("starting server")
     server = iperf3.Server()
     server.bind_address = '0.0.0.0'
-    server.port = 5000
+    server.port = 5001
     server.verbose = False
     while True:
         result = server.run()
@@ -814,4 +814,4 @@ class TestResult(object):
 
 
 if __name__ == "__main__":
-    app.run(host='10.11.170.14', port='5001', debug=True)
+    app.run( port='5003', debug=True)
