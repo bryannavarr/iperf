@@ -30,17 +30,38 @@ def iperf():
 #@app.route("/runclient", methods=['GET'] )
 @app.route("/runclient")
 def runtest():
+    print 'starting test'
     client = Client()
-    #client.start()
-    client.duration = 1
-    client.server_hostname = "10.11.170.14"
-    client.port = 5001
-    print "client running"
-    client.run()
-    server = Server()
-    server.start()
-    print "server test running"
-    return "test is done"
+    client.duration = 1 
+    client.server_hostname = '10.11.170.14'
+    client.port = 5000
+    client.protocol = 'tcp'
+    print('Connecting to {0}:{1}'.format(client.server_hostname, client.port))
+    result = client.run()
+    
+    if result.error:
+	print(result.error)
+    else:
+	print('')
+        print('Test Completed')
+        print ('started at         {0}'.format(result.time))
+	print ('bytes transmitted  {0}'.format(result.bytes))
+	print ('jitter (ms)        {0}'.format(result.jitter_ms))
+        print ('avg cpu load       {0}%\n'.format(result.local_cpu_total))
+      
+@app.route("/runserver")
+def servertest():
+    print "starting server"
+    server = iperf3.Server()
+    server.bind_address='0.0.0.0'
+    server.port = 5000
+    server.verbose = False
+    while True: 
+      result = server.run()
+      if result.error:
+	print(result.error)
+      else:
+	print result
 
 try:
     from queue import Queue
@@ -49,6 +70,7 @@ except ImportError:
 
 __version__ = '0.1.2'
 
+MAX_UDP_BULKSIZE = (65535 - 8 - 20)
 
 def more_data(pipe_out):
     # """Check if there is more data left on the pipe
@@ -430,6 +452,30 @@ class Client(IPerf3):
         self.lib.iperf_set_test_server_hostname(self._test,
                                                 c_char_p(hostname.encode('utf-8')))
         self._server_hostname = hostname
+    
+    @property
+    def protocol(self):
+	#The iperf3 instance protocol, valid protocols are tcp and upd
+	proto_id = self.lib.iperf_get_test_protocol_id(self._test)
+	
+	if proto_id == SOCK_STREAM:
+		self._protocol= 'tcp'
+	elif proto_id == SOCK_DGRAM:
+		self._protocol = 'udp'
+
+	return self._protocol
+
+    @protocol.setter
+    def protocol(self, protocol):
+	if protocol == 'tcp':
+		self.lib.set_protocol(self._test, int(SOCK_STREAM))
+	elif protocol == 'udp':
+		self.lib.set_protocl(selt._test, int(SOCK_DGRAM))
+		
+		if self.blksize > MAX_UDP_BULKSIZE:
+			self.blksize = MAX_UDP_BULKSIZE
+
+		self._protocol = protocol
 
     @property
     def duration(self):
@@ -529,7 +575,7 @@ class Client(IPerf3):
         output_to_screen(self._stdout_fd, self._stderr_fd)
 
         return TestResult(data)
-	print TestResult(data)
+	
 
 # api.add_resource('/server', methods=['GET', 'POST'])
 class Server(IPerf3):
@@ -594,6 +640,7 @@ class Server(IPerf3):
             t.join(.1)
 
         return TestResult(data_queue.get())
+     	response = server.run()
 
 class TestResult(object):
     # """Class containing iperf3 test results
