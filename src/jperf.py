@@ -10,6 +10,7 @@ import os
 import select
 import json
 import threading
+#import multiprocessing
 
 app = Flask(__name__)
 api = Api(app)
@@ -24,44 +25,52 @@ def home():
 def iperf():
     return "Running iperf test"
 
-# @app.route("/runclient", methods=['GET'] )
-
 
 @app.route("/runclient")
 def runtest():
     print('starting test')
     client = iperf3.Client()
-    client.duration = 1
-    client.server_hostname = '10.11.170.14'
-    client.port = 5001
-    client.protocol = 'tcp'
+    client.duration = 135
+    client.num_streams = 5
+    client.server_hostname = '10.10.1.80'
+    #client.bind_address = '10.11.170.14'
+    client.port = 5201
+    client.protocol = "tcp"
+    client.json_output= True
     print('Connecting to {0}:{1}'.format(client.server_hostname, client.port))
     result = client.run()
+   # return ('host {0}'.format(result.json.remote_host))
+    return ('Throughput {0}'.format(result.json))
+    #return ('host {0}'.format(result.json.remote_host))
 
     if result.error:
         print(result.error)
+	return result.error
     else:
-        print('')
-        print('Test Completed')
-        print('started at         {0}'.format(result.time))
-        print('bytes transmitted  {0}'.format(result.bytes))
-        print('jitter (ms)        {0}'.format(result.jitter_ms))
-        print('avg cpu load       {0}%\n'.format(result.local_cpu_total))
+        return ('Throughput {0}'.format(result.json))
+       # print('')
+       # print('Test Completed')
+       # print('started at         {0}'.format(result.time))
+       # print('bytes transmitted  {0}'.format(result.bytes))
+       # print('jitter (ms)        {0}'.format(result.jitter_ms))
+       # print('avg cpu load       {0}%\n'.format(result.local_cpu_total))
 
 
 @app.route("/runserver")
 def servertest():
     print("starting server")
     server = iperf3.Server()
-    server.bind_address = '0.0.0.0'
-    server.port = 5001
+    #server.bind_address = '10.11.170.14'
+    server.port = 520
     server.verbose = False
     while True:
-        result = server.run()
-        if result.error:
+    	result = server.run()
+    	if result.error:
+            return (result.error)
             print(result.error)
-        else:
-            print(result)
+    	else:
+            return (result.json)
+            print(result.json)
 
 
 try:
@@ -278,10 +287,10 @@ class IPerf3(object):
         # """
         try:
             self._role = c_char(self.lib.iperf_get_test_role(
-                self._test)).value.decode('utf-8')
+                self._test)).values.decode('utf-8')
         except TypeError:
             self._role = c_char(
-                chr(self.lib.iperf_get_test_role(self._test))).value.decode('utf-8')
+                chr(self.lib.iperf_get_test_role(self._test))).values.decode('utf-8')
         return self._role
 
     @role.setter
@@ -301,7 +310,7 @@ class IPerf3(object):
         # :rtype: string
         # """
         result = c_char_p(
-            self.lib.iperf_get_test_bind_address(self._test)).value
+            self.lib.iperf_get_test_bind_address(self._test)).values
         if result:
             self._bind_address = result.decode('utf-8')
         else:
@@ -383,7 +392,7 @@ class IPerf3(object):
 
         # :rtype: int
         # """
-        return c_int.in_dll(self.lib, "i_errno").value
+        return c_int.in_dll(self.lib, "i_errno").values
 
     @property
     def iperf_version(self):
@@ -393,7 +402,7 @@ class IPerf3(object):
         # """
         # TODO: Is there a better way to get the const char than allocating 30?
         VersionType = c_char * 30
-        return VersionType.in_dll(self.lib, "version").value.decode('utf-8')
+        return VersionType.in_dll(self.lib, "version").values.decode('utf-8')
 
     def _error_to_string(self, error_id):
         # """Returns an error string from libiperf
@@ -439,11 +448,13 @@ class Client(IPerf3):
         super(Client, self).__init__(role='c', *args, **kwargs)
 
         # Internal variables
-        self._bulksize = None
+        self._blksize = None
         self._server_hostname = None
         self._port = None
         self._num_streams = None
         self._zerocopy = False
+	self._bandwidth = None
+	self._protocol = None
 
     @property
     def server_hostname(self):
@@ -453,7 +464,7 @@ class Client(IPerf3):
         # :rtype: string
         # """
         result = c_char_p(
-            self.lib.iperf_get_test_server_hostname(self._test)).value
+            self.lib.iperf_get_test_server_hostname(self._test)).values
         if result:
             self._server_hostname = result.decode('utf-8')
         else:
@@ -500,17 +511,30 @@ class Client(IPerf3):
     def duration(self, duration):
         self.lib.iperf_set_test_duration(self._test, duration)
         self._duration = duration
+     
+    @property
+    def bandwidth(self):
+	self._bandwidth = self.lib.iperf_get_test_rate_(self._test)
+        return self._bandwidth
+
+    @bandwidth.setter
+    def bandwidth(self, bandwidth):
+	self._bandwidth = self.lib.iperf_get_test_rate(self._test)
+	self._bandwidth = bandwidth
 
     @property
-    def bulksize(self):
+    def blksize(self):
         # """The test bulksize."""
-        self._bulksize = self.lib.iperf_get_test_blksize(self._test)
-        return self._bulksize
+        self._blksize = self.lib.iperf_get_test_blksize(self._test)
+        return self._blksize
 
-    @bulksize.setter
-    def bulksize(self, bulksize):
-        self.lib.iperf_set_test_blksize(self._test, bulksize)
-        self._bulksize = bulksize
+    @blksize.setter
+    def blksize(self, blksize):
+	if self.protocol == 'udp' and blksize > MAX_UPD_BULKSIZE:
+	    blksize = MAX_UDP_BULKSIZE
+
+        self.lib.iperf_set_test_blksize(self._test, blksize)
+        self._blksize = blksize
 
     @property
     def num_streams(self):
@@ -576,18 +600,27 @@ class Client(IPerf3):
         # :rtype: instance of :class:`TestResult`
         # """
 
-        output_to_pipe(self._pipe_in)
+	if self.json_output:
+	
+            output_to_pipe(self._pipe_in)
+            error = self.lib.iperf_run_client(self._test)
+	    
+	    if not self.iperf_version.startswith('iperf 3.1'):
+                data = read_pipe(self._pipe_out)
+		if data.startswith('Control connection'):
+		    data = '{' +data.split('{', 1)[1] 
+	    else:
+		data = c_char_p(
+		     self.lib.iperf_get_test_json_output_string(self._test)).value
+		if data:
+		    data = data.decode('utf-8')
+	    
+	    output_to_screen(self._stdout_fd, self._stderr_fd)
+	  
+	    if not data or error:
+		data = '{"error: "%s"}' % self._error_to_string(self._errno)
 
-        error = self.lib.iperf_run_client(self._test)
-
-        if error:
-            data = '{"error": "%s"}' % self._error_to_string(self._errno)
-        else:
-            data = read_pipe(self._pipe_out)
-
-        output_to_screen(self._stdout_fd, self._stderr_fd)
-
-        return TestResult(data)
+            return TestResult(data)
 
 
 # api.add_resource('/server', methods=['GET', 'POST'])
@@ -626,38 +659,39 @@ class Server(IPerf3):
             # :param data_queue: thread-safe queue
             # """
             output_to_pipe(self._pipe_in)
-
-            self.lib.iperf_run_server(self._test)
+            error = self.lib.iperf_run_server(self._test)  
+            output_to_screen(self._stdout_fd, self._stderr_fd)
 
             # TODO json_output_string not available on earlier iperf3 builds
             # have to build in a version check using self.iperf_version
             # The following line should work on later versions:
-            # data = c_char_p(self.lib.iperf_get_test_json_output_string(self._test)).value
+            #data = c_char_p(self.lib.iperf_get_test_json_output_string(self._test)).values
             data = read_pipe(self._pipe_out)
 
             if not data:
                 data = '{"error": "%s"}' % self._error_to_string(self._errno)
 
-            output_to_screen(self._stdout_fd, self._stderr_fd)
+            
+            self.lib.iperf_reset_test(self._test)
+            data_queue.put(data)
+
+    	if self.json_output:
+            data_queue = Queue()
+
+            t = threading.Thread(target=_run_in_thread, args=[self, data_queue])
+            t.daemon = True
+
+            t.start()
+            while t.is_alive():
+                t.join(.1)
+
+            return TestResult(data_queue.get())
+        else:
+            # setting json_output to False will output test to screen only
+            self.lib.iperf_run_server(self._test)
             self.lib.iperf_reset_test(self._test)
 
-            data_queue.put(data)
-    if self.json_output:
-        data_queue = Queue()
-
-        t = threading.Thread(target=_run_in_thread, args=[self, data_queue])
-        t.daemon = True
-
-        t.start()
-        while t.is_alive():
-            t.join(.1)
-        return TestResult(data_queue.get())
-    else:
-        # setting json_output to False will output test to screen only
-        self.lib.iperf_run_server(self._test)
-        self.lib.iperf_reset_test(self._test)
-
-        return None
+            return None
 
 
 class TestResult(object):
@@ -752,7 +786,7 @@ class TestResult(object):
             self.remote_cpu_system = cpu_utilization_perc['remote_system']
 
 # TCP specific test results
-            if self.protocol == 'TCP':
+            if self.protocol == 'tcp':
                 sent_json = self.json['end']['sum_sent']
                 self.sent_bytes = sent_json['bytes']
                 self.sent_bps = sent_json['bits_per_second']
@@ -782,7 +816,7 @@ class TestResult(object):
                 self.retransmits = sent_json.get('retransmits')
 
             # UDP specific test results
-            elif self.protocol == 'UDP':
+            elif self.protocol == 'udp':
                 self.bytes = self.json['end']['sum']['bytes']
                 self.bps = self.json['end']['sum']['bits_per_second']
                 self.jitter_ms = self.json['end']['sum']['jitter_ms']
@@ -826,4 +860,4 @@ class TestResult(object):
 
 
 if __name__ == "__main__":
-    app.run(port='5003', debug=True)
+    app.run(host='10.11.170.14', port='5003', debug=True)
