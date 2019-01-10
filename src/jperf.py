@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from flask import Flask, request
 from flask_restful import Resource, Api
 from json import dumps
@@ -10,7 +11,7 @@ import os
 import select
 import json
 import threading
-# import multiprocessing
+import multiprocessing
 
 app = Flask(__name__)
 api = Api(app)
@@ -27,51 +28,58 @@ def iperf():
 
 
 @app.route("/runclient")
-def runtest():
-    print('starting test')
+def client():
+    print('starting client')
     client = iperf3.Client()
     client.duration = 10
     client.num_streams = 5
-    client.server_hostname = '10.10.1.80'
-    # client.bind_address = '10.11.170.14'
-    client.port = 5202
-    client.protocol = "tcp"
+    client.server_hostname = '10.11.170.14'
+    #client.bind_address = '10.10.1.80'
+    client.port = 5000
+    client.protocol = "UDP"
     client.json_output = True
     print('Connecting to {0}:{1}'.format(client.server_hostname, client.port))
     result = client.run()
    # return ('host {0}'.format(result.json.remote_host))
-    return ('Throughput {0}'.format(result.json))
-    # return ('host {0}'.format(result.json.remote_host))
+   # return ('Throughput {0}'.format(result.json))
+   # return ('host {0}'.format(result.json.remote_host))
 
     if result.error:
         print(result.error)
-        return result.error
+    
     else:
-        return ('Throughput {0}'.format(result.json))
-       # print('')
-       # print('Test Completed')
+       # return ('Throughput {0}'.format(result.json))
+        print('')
+        print('Test Completed')
        # print('started at         {0}'.format(result.time))
        # print('bytes transmitted  {0}'.format(result.bytes))
        # print('jitter (ms)        {0}'.format(result.jitter_ms))
        # print('avg cpu load       {0}%\n'.format(result.local_cpu_total))
-
+    
+   # return ('Throughput {0}'.format(result.json))
+    result = str(result)
+    return result
 
 @app.route("/runserver")
-def servertest():
+def server():
     print("starting server")
     server = iperf3.Server()
-    # server.bind_address = '10.11.170.14'
-    server.port = 5202
+    #server.bind_address = '10.10.1.80'
+    server.port = 5555
     server.verbose = False
-    while True:
-    	result = server.run()
-    	if result.error:
-            return (result.error)
-            print(result.error)
-    	else:
-            return (result.json)
-            print(result.json)
-
+   # while True:
+    result = server.run()
+    #print (result)
+    if result.error:
+        
+        print (result.error)
+    else:
+        
+        print(result)
+        #return (result.text)
+    print ("server closing")
+    result = str(result)
+    return (result)
 
 try:
     from queue import Queue
@@ -86,23 +94,23 @@ MAX_UDP_BULKSIZE = (65535 - 8 - 20)
 
 
 def more_data(pipe_out):
-    """Check if there is more data left on the pipe
+   # """Check if there is more data left on the pipe
 
-    :param pipe_out: The os pipe_out
-    :rtype: bool
-    """
+   # :param pipe_out: The os pipe_out
+   # :rtype: bool
+   # """
     r, _, _ = select.select([pipe_out], [], [], 0)
     return bool(r)
 
 
 def read_pipe(pipe_out):
-    """Read data on a pipe
+   # """Read data on a pipe
 
-    Used to capture stdout data produced by libiperf
+    #Used to capture stdout data produced by libiperf
 
-    :param pipe_out: The os pipe_out
-    :rtype: unicode string
-    """
+   # :param pipe_out: The os pipe_out
+   # :rtype: unicode string
+   # """
     out = b''
     while more_data(pipe_out):
         out += os.read(pipe_out, 1024)
@@ -111,40 +119,40 @@ def read_pipe(pipe_out):
 
 
 def output_to_pipe(pipe_in):
-    """Redirects stdout and stderr to a pipe
+   # """Redirects stdout and stderr to a pipe
 
-    :param pipe_out: The pipe to redirect stdout and stderr to
-    """
+   # :param pipe_out: The pipe to redirect stdout and stderr to
+   # """
     os.dup2(pipe_in, 1)  # stdout
     # os.dup2(pipe_in, 2)  # stderr
 
 
 def output_to_screen(stdout_fd, stderr_fd):
-    """Redirects stdout and stderr to a pipe
+   # """Redirects stdout and stderr to a pipe
 
-    :param stdout_fd: The stdout file descriptor
-    :param stderr_fd: The stderr file descriptor
-    """
+   # :param stdout_fd: The stdout file descriptor
+   # :param stderr_fd: The stderr file descriptor
+   # """
     os.dup2(stdout_fd, 1)
     # os.dup2(stderr_fd, 2)
 
 
 class IPerf3(object):
-    """The base class used by both the iperf3 :class:`Server` and :class:`Client`
+   # """The base class used by both the iperf3 :class:`Server` and :class:`Client`
 
-    .. note:: You should not use this class directly
-    """
+   # .. note:: You should not use this class directly
+   # """
 
     def __init__(self,
                  role,
                  verbose=True,
                  lib_name=None):
-        """Initialise the iperf shared library
+       # """Initialise the iperf shared library
 
-        :param role: 'c' = client; 's' = server
-        :param verbose: enable verbose output
-        :param lib_name: optional name and path for libiperf.so.0 library
-        """
+       # :param role: 'c' = client; 's' = server
+       # :param verbose: enable verbose output
+       # :param lib_name: optional name and path for libiperf.so.0 library
+       # """
         if lib_name is None:
             lib_name = util.find_library('libiperf')
             if lib_name is None:
@@ -254,7 +262,7 @@ class IPerf3(object):
         self.verbose = verbose
 
     def __del__(self):
-        """Cleanup the test after the :class:`IPerf3` class is terminated"""
+       # """Cleanup the test after the :class:`IPerf3` class is terminated"""
         os.close(self._stdout_fd)
         os.close(self._stderr_fd)
         os.close(self._pipe_out)
@@ -277,25 +285,25 @@ class IPerf3(object):
             pass
 
     def _new(self):
-        """Initialise a new iperf test
+       # """Initialise a new iperf test
 
-        struct iperf_test *iperf_new_test()
-        """
+       # struct iperf_test *iperf_new_test()
+       # """
         return self.lib.iperf_new_test()
 
     def defaults(self):
-        """Set/reset iperf test defaults."""
+       # """Set/reset iperf test defaults."""
         self.lib.iperf_defaults(self._test)
 
 
     @property
     def role(self):
-        """The iperf3 instance role
+       # """The iperf3 instance role
 
-        valid roles are 'c'=client and 's'=server
+       # valid roles are 'c'=client and 's'=server
 
-        :rtype: 'c' or 's'
-        """
+       # :rtype: 'c' or 's'
+       # """
         try:
             self._role = c_char(
                 self.lib.iperf_get_test_role(self._test)
@@ -319,11 +327,11 @@ class IPerf3(object):
 
     @property
     def bind_address(self):
-        """The bind address the iperf3 instance will listen on
+       # """The bind address the iperf3 instance will listen on
 
-        use * to listen on all available IPs
-        :rtype: string
-        """
+       # use * to listen on all available IPs
+       # :rtype: string
+       # """
         result = c_char_p(
             self.lib.iperf_get_test_bind_address(self._test)
         ).value
@@ -344,7 +352,7 @@ class IPerf3(object):
 
     @property
     def port(self):
-        """The port the iperf3 server is listening on"""
+       # """The port the iperf3 server is listening on"""
         self._port = self.lib.iperf_get_test_server_port(self._test)
         return self._port
 
@@ -355,13 +363,13 @@ class IPerf3(object):
 
     @property
     def json_output(self):
-        """Toggles json output of libiperf
+       # """Toggles json output of libiperf
 
-        Turning this off will output the iperf3 instance results to
-        stdout/stderr
+       # Turning this off will output the iperf3 instance results to
+       # stdout/stderr
 
-        :rtype: bool
-        """
+       # :rtype: bool
+       # """
         enabled = self.lib.iperf_get_test_json_output(self._test)
 
         if enabled:
@@ -382,10 +390,10 @@ class IPerf3(object):
 
     @property
     def verbose(self):
-        """Toggles verbose output for the iperf3 instance
+       # """Toggles verbose output for the iperf3 instance
 
-        :rtype: bool
-        """
+       # :rtype: bool
+       # """
         enabled = self.lib.iperf_get_verbose(self._test)
 
         if enabled:
@@ -405,63 +413,63 @@ class IPerf3(object):
 
     @property
     def _errno(self):
-        """Returns the last error ID
+       # """Returns the last error ID
 
-        :rtype: int
-        """
+       # :rtype: int
+       # """
         return c_int.in_dll(self.lib, "i_errno").value
 
     @property
     def iperf_version(self):
-        """Returns the version of the libiperf library
+       # """Returns the version of the libiperf library
 
-        :rtype: string
-        """
+       # :rtype: string
+       # """
         # TODO: Is there a better way to get the const char than allocating 30?
         VersionType = c_char * 30
         return VersionType.in_dll(self.lib, "version").value.decode('utf-8')
 
     def _error_to_string(self, error_id):
-        """Returns an error string from libiperf
+       # """Returns an error string from libiperf
 
-        :param error_id: The error_id produced by libiperf
-        :rtype: string
-        """
+       # :param error_id: The error_id produced by libiperf
+       # :rtype: string
+       # """
         strerror = self.lib.iperf_strerror
         strerror.restype = c_char_p
         return strerror(error_id).decode('utf-8')
 
     def run(self):
-        """Runs the iperf3 instance.
+       # """Runs the iperf3 instance.
 
-        This function has to be instantiated by the Client and Server
-        instances
+        #This function has to be instantiated by the Client and Server
+        #instances
 
-        :rtype: NotImplementedError
-        """
+        #:rtype: NotImplementedError
+        #"""
         raise NotImplementedError
 
 
 
 class Client(IPerf3):
-    """An iperf3 client connection.
+    #"""An iperf3 client connection.
 
-    This opens up a connection to a running iperf3 server
+    #This opens up a connection to a running iperf3 server
 
-    Basic Usage::
+    #Basic Usage::
 
-      >>> import iperf3
+     # >>> import iperf3
 
-      >>> client = iperf3.Client()
-      >>> client.duration = 1
-      >>> client.server_hostname = '127.0.0.1'
-      >>> client.port = 5201
-      >>> client.run()
-      {'intervals': [{'sum': {...
-    """
+     # >>> client = iperf3.Client()
+     # >>> client.duration = 1
+     # >>> client.server_hostname = '127.0.0.1'
+     # >>> client.port = 5201
+     # >>> client.run()
+     # {'intervals': [{'sum': {...
+   # """
 
     def __init__(self, *args, **kwargs):
-        """Initialise the iperf shared library"""
+       # """Initialise the iperf shared library"""
         super(Client, self).__init__(role='c', *args, **kwargs)
 
         # Internal variables
@@ -475,12 +483,12 @@ class Client(IPerf3):
 
     @property
     def server_hostname(self):
-        """The server hostname to connect to.
+       # """The server hostname to connect to.
 
-        Accepts DNS entries or IP addresses.
+       # Accepts DNS entries or IP addresses.
 
-        :rtype: string
-        """
+       # :rtype: string
+       # """
         result = c_char_p(
             self.lib.iperf_get_test_server_hostname(self._test)
         ).value
@@ -500,12 +508,12 @@ class Client(IPerf3):
 
     @property
     def protocol(self):
-        """The iperf3 instance protocol
+       # """The iperf3 instance protocol
 
-        valid protocols are 'tcp' and 'udp'
+       # valid protocols are 'tcp' and 'udp'
 
-        :rtype: str
-        """
+       # :rtype: str
+       # """
         proto_id = self.lib.iperf_get_test_protocol_id(self._test)
 
         if proto_id == SOCK_STREAM:
@@ -529,7 +537,7 @@ class Client(IPerf3):
 
     @property
     def duration(self):
-        """The test duration in seconds."""
+       # """The test duration in seconds."""
         self._duration = self.lib.iperf_get_test_duration(self._test)
         return self._duration
 
@@ -540,7 +548,7 @@ class Client(IPerf3):
 
     @property
     def bandwidth(self):
-        """Target bandwidth in bits/sec"""
+       # """Target bandwidth in bits/sec"""
         self._bandwidth = self.lib.iperf_get_test_rate(self._test)
         return self._bandwidth
 
@@ -551,7 +559,7 @@ class Client(IPerf3):
 
     @property
     def blksize(self):
-        """The test blksize."""
+       # """The test blksize."""
         self._blksize = self.lib.iperf_get_test_blksize(self._test)
         return self._blksize
 
@@ -567,11 +575,11 @@ class Client(IPerf3):
 
     @property
     def bulksize(self):
-        """The test bulksize.
+       # """The test bulksize.
 
-        Deprecated argument, use blksize instead to ensure consistency
-        with iperf3 C libary
-        """
+       # Deprecated argument, use blksize instead to ensure consistency
+       # with iperf3 C libary
+       # """
         # Keeping bulksize argument for backwards compatibility with
         # iperf3-python < 0.1.7
         return self.blksize
@@ -584,7 +592,7 @@ class Client(IPerf3):
 
     @property
     def num_streams(self):
-        """The number of streams to use."""
+       # """The number of streams to use."""
         self._num_streams = self.lib.iperf_get_test_num_streams(self._test)
         return self._num_streams
 
@@ -595,16 +603,16 @@ class Client(IPerf3):
 
     @property
     def zerocopy(self):
-        """Toggle zerocopy.
+       # """Toggle zerocopy.
 
-        Use the sendfile() system call for "Zero Copy" mode. This uses much
-        less CPU. This is not supported on all systems.
+       # Use the sendfile() system call for "Zero Copy" mode. This uses much
+       # less CPU. This is not supported on all systems.
 
-        **Note** there isn't a hook in the libiperf library for getting the
-        current configured value. Relying on zerocopy.setter function
+       # **Note** there isn't a hook in the libiperf library for getting the
+       # current configured value. Relying on zerocopy.setter function
 
-        :rtype: bool
-        """
+       # :rtype: bool
+       # """
         return self._zerocopy
 
     @zerocopy.setter
@@ -618,10 +626,10 @@ class Client(IPerf3):
 
     @property
     def reverse(self):
-        """Toggles direction of test
+       # """Toggles direction of test
 
-        :rtype: bool
-        """
+       # :rtype: bool
+       # """
         enabled = self.lib.iperf_get_test_reverse(self._test)
 
         if enabled:
@@ -641,10 +649,10 @@ class Client(IPerf3):
         self._reverse = enabled
 
     def run(self):
-        """Run the current test client.
+       # """Run the current test client.
 
-        :rtype: instance of :class:`TestResult`
-        """
+       # :rtype: instance of :class:`TestResult`
+       # """
         if self.json_output:
             output_to_pipe(self._pipe_in)  # Disable stdout
             error = self.lib.iperf_run_client(self._test)
@@ -660,7 +668,7 @@ class Client(IPerf3):
                 if data:
                     data = data.decode('utf-8')
 
-            output_to_screen(self._stdout_fd, self._stderr_fd)  # enable stdout
+            #output_to_screen(self._stdout_fd, self._stderr_fd)  # enable stdout
 
             if not data or error:
                 data = '{"error": "%s"}' % self._error_to_string(self._errno)
@@ -670,39 +678,39 @@ class Client(IPerf3):
 
 
 class Server(IPerf3):
-    """An iperf3 server connection.
+   # """An iperf3 server connection.
 
-    This starts an iperf3 server session. The server terminates after each
-    succesful client connection so it might be useful to run Server.run()
-    in a loop.
+   # This starts an iperf3 server session. The server terminates after each
+   # succesful client connection so it might be useful to run Server.run()
+   # in a loop.
 
-    The C function iperf_run_server is called in a seperate thread to make
-    sure KeyboardInterrupt(aka ctrl+c) can still be captured
+   # The C function iperf_run_server is called in a seperate thread to make
+   # sure KeyboardInterrupt(aka ctrl+c) can still be captured
 
-    Basic Usage::
+   # Basic Usage::
 
-      >>> import iperf3
+    #  >>> import iperf3
 
-      >>> server = iperf3.Server()
-      >>> server.run()
-      {'start': {...
-    """
+    #  >>> server = iperf3.Server()
+    #  >>> server.run()
+    #  {'start': {...
+   # """
 
     def __init__(self, *args, **kwargs):
-        """Initialise the iperf3 server instance"""
+       # """Initialise the iperf3 server instance"""
         super(Server, self).__init__(role='s', *args, **kwargs)
 
     def run(self):
-        """Run the iperf3 server instance.
+       # """Run the iperf3 server instance.
 
-        :rtype: instance of :class:`TestResult`
-        """
+       # :rtype: instance of :class:`TestResult`
+       # """
 
         def _run_in_thread(self, data_queue):
-            """Runs the iperf_run_server
+           # """Runs the iperf_run_server
 
-            :param data_queue: thread-safe queue
-            """
+           # :param data_queue: thread-safe queue
+           # """
             output_to_pipe(self._pipe_in)  # disable stdout
             error = self.lib.iperf_run_server(self._test)
             output_to_screen(self._stdout_fd, self._stderr_fd)  # enable stdout
@@ -743,78 +751,78 @@ class Server(IPerf3):
 
 
 class TestResult(object):
-    """Class containing iperf3 test results.
+    #"""Class containing iperf3 test results.
 
-    :param text: The raw result from libiperf as text
-    :param json: The raw result from libiperf asjson/dict
-    :param error: Error captured during test, None if all ok
+   # :param text: The raw result from libiperf as text
+   # :param json: The raw result from libiperf asjson/dict
+   # :param error: Error captured during test, None if all ok
 
-    :param time: Start time
-    :param timesecs: Start time in seconds
+   # :param time: Start time
+   # :param timesecs: Start time in seconds
 
-    :param system_info: System info
-    :param version: Iperf Version
+   # :param system_info: System info
+   # :param version: Iperf Version
 
-    :param local_host: Local host ip
-    :param local_port: Local port number
-    :param remote_host: Remote host ip
-    :param remote_port: Remote port number
+   # :param local_host: Local host ip
+   # :param local_port: Local port number
+   # :param remote_host: Remote host ip
+   # :param remote_port: Remote port number
 
-    :param reverse: Test ran in reverse direction
-    :param protocol: 'TCP' or 'UDP'
-    :param num_streams: Number of test streams
-    :param blksize:
-    :param omit:
-    :param duration: Test duration in seconds
+   # :param reverse: Test ran in reverse direction
+   # :param protocol: 'TCP' or 'UDP'
+   # :param num_streams: Number of test streams
+   # :param blksize:
+   # :param omit:
+   # :param duration: Test duration in seconds
 
-    :param local_cpu_total: The local total CPU load
-    :param local_cpu_user: The local user CPU load
-    :param local_cpu_system: The local system CPU load
-    :param remote_cpu_total: The remote total CPU load
-    :param remote_cpu_user: The remote user CPU load
-    :param remote_cpu_system: The remote system CPU load
-
-
-    TCP test specific
-
-    :param tcp_mss_default:
-    :param retransmits: amount of retransmits (Only returned from client)
-
-    :param sent_bytes: Sent bytes
-    :param sent_bps: Sent bits per second
-    :param sent_kbps: sent kilobits per second
-    :param sent_Mbps: Sent Megabits per second
-    :param sent_kB_s: Sent kiloBytes per second
-    :param sent_MB_s: Sent MegaBytes per second
-
-    :param received_bytes:  Received bytes
-    :param received_bps: Received bits per second
-    :param received_kbps: Received kilobits per second
-    :param received_Mbps: Received Megabits per second
-    :param received_kB_s: Received kiloBytes per second
-    :param received_MB_s: Received MegaBytes per second
+   # :param local_cpu_total: The local total CPU load
+   # :param local_cpu_user: The local user CPU load
+   # :param local_cpu_system: The local system CPU load
+   # :param remote_cpu_total: The remote total CPU load
+   # :param remote_cpu_user: The remote user CPU load
+   # :param remote_cpu_system: The remote system CPU load
 
 
-    UDP test specific
+   # TCP test specific
 
-    :param bytes:
-    :param bps:
-    :param jitter_ms:
-    :param kbps:
-    :param Mbps:
-    :param kB_s:
-    :param MB_s:
-    :param packets:
-    :param lost_packets:
-    :param lost_percent:
-    :param seconds:
-    """
+   # :param tcp_mss_default:
+   # :param retransmits: amount of retransmits (Only returned from client)
+
+   # :param sent_bytes: Sent bytes
+   # :param sent_bps: Sent bits per second
+   # :param sent_kbps: sent kilobits per second
+   # :param sent_Mbps: Sent Megabits per second
+   # :param sent_kB_s: Sent kiloBytes per second
+   # :param sent_MB_s: Sent MegaBytes per second
+
+   # :param received_bytes:  Received bytes
+   # :param received_bps: Received bits per second
+   # :param received_kbps: Received kilobits per second
+   # :param received_Mbps: Received Megabits per second
+   # :param received_kB_s: Received kiloBytes per second
+   # :param received_MB_s: Received MegaBytes per second
+
+
+   # UDP test specific
+
+   # :param bytes:
+   # :param bps:
+   # :param jitter_ms:
+   # :param kbps:
+   # :param Mbps:
+   # :param kB_s:
+   # :param MB_s:
+   # :param packets:
+   # :param lost_packets:
+   # :param lost_percent:
+   # :param seconds:
+   # """
 
     def __init__(self, result):
-        """Initialise TestResult
+       # """Initialise TestResult
 
-        :param result: raw json output from :class:`Client` and :class:`Server`
-        """
+       # :param result: raw json output from :class:`Client` and :class:`Server`
+       # """
         # The full result data
         self.text = result
         self.json = json.loads(result)
@@ -915,7 +923,7 @@ class TestResult(object):
             return 'server'
 
     def __repr__(self):
-        """Print the result as received from iperf3"""
+       # """Print the result as received from iperf3"""
         return self.text
 
 
