@@ -260,7 +260,7 @@ class IPerf3(object):
         os.close(self._pipe_in)
 
         try:
- 	    self.lib.iperf_client_end(self._test)
+ 	        self.lib.iperf_client_end(self._test)
             self.lib.iperf_free_test(self._test)
         except AttributeError:
             # self.lib doesn't exist, likely because iperf3 wasnt installed or
