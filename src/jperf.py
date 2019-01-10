@@ -30,11 +30,11 @@ def iperf():
 def runtest():
     print('starting test')
     client = iperf3.Client()
-    client.duration = 135
+    client.duration = 10
     client.num_streams = 5
     client.server_hostname = '10.10.1.80'
     #client.bind_address = '10.11.170.14'
-    client.port = 5201
+    client.port = 5202
     client.protocol = "tcp"
     client.json_output= True
     print('Connecting to {0}:{1}'.format(client.server_hostname, client.port))
@@ -61,7 +61,7 @@ def servertest():
     print("starting server")
     server = iperf3.Server()
     #server.bind_address = '10.11.170.14'
-    server.port = 520
+    server.port = 5202
     server.verbose = False
     while True:
     	result = server.run()
@@ -78,7 +78,7 @@ try:
 except ImportError:
     from Queue import Queue  # Python2 compatibility
 
-__version__ = '0.1.2'
+__version__ = '0.1.10'
 
 MAX_UDP_BULKSIZE = (65535 - 8 - 20)
 
@@ -260,6 +260,7 @@ class IPerf3(object):
         os.close(self._pipe_in)
 
         try:
+ 	    self.lib.iperf_client_end(self._test)
             self.lib.iperf_free_test(self._test)
         except AttributeError:
             # self.lib doesn't exist, likely because iperf3 wasnt installed or
@@ -287,10 +288,10 @@ class IPerf3(object):
         # """
         try:
             self._role = c_char(self.lib.iperf_get_test_role(
-                self._test)).values.decode('utf-8')
+                self._test)).value.decode('utf-8')
         except TypeError:
             self._role = c_char(
-                chr(self.lib.iperf_get_test_role(self._test))).values.decode('utf-8')
+                chr(self.lib.iperf_get_test_role(self._test))).value.decode('utf-8')
         return self._role
 
     @role.setter
@@ -310,7 +311,7 @@ class IPerf3(object):
         # :rtype: string
         # """
         result = c_char_p(
-            self.lib.iperf_get_test_bind_address(self._test)).values
+            self.lib.iperf_get_test_bind_address(self._test)).value
         if result:
             self._bind_address = result.decode('utf-8')
         else:
