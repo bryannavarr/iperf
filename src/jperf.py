@@ -129,7 +129,7 @@ def output_to_screen(stdout_fd, stderr_fd):
     # os.dup2(stderr_fd, 2)
 
 
-[docs]class IPerf3(object):
+class IPerf3(object):
     """The base class used by both the iperf3 :class:`Server` and :class:`Client`
 
     .. note:: You should not use this class directly
@@ -283,7 +283,7 @@ def output_to_screen(stdout_fd, stderr_fd):
         """
         return self.lib.iperf_new_test()
 
-[docs] def defaults(self):
+    def defaults(self):
         """Set/reset iperf test defaults."""
         self.lib.iperf_defaults(self._test)
 
@@ -431,7 +431,7 @@ def output_to_screen(stdout_fd, stderr_fd):
         strerror.restype = c_char_p
         return strerror(error_id).decode('utf-8')
 
-[docs]    def run(self):
+    def run(self):
         """Runs the iperf3 instance.
 
         This function has to be instantiated by the Client and Server
@@ -443,7 +443,7 @@ def output_to_screen(stdout_fd, stderr_fd):
 
 
 
-[docs]class Client(IPerf3):
+class Client(IPerf3):
     """An iperf3 client connection.
 
     This opens up a connection to a running iperf3 server
@@ -640,7 +640,7 @@ def output_to_screen(stdout_fd, stderr_fd):
 
         self._reverse = enabled
 
-[docs]    def run(self):
+    def run(self):
         """Run the current test client.
 
         :rtype: instance of :class:`TestResult`
@@ -669,7 +669,7 @@ def output_to_screen(stdout_fd, stderr_fd):
 
 
 
-[docs]class Server(IPerf3):
+class Server(IPerf3):
     """An iperf3 server connection.
 
     This starts an iperf3 server session. The server terminates after each
@@ -692,7 +692,7 @@ def output_to_screen(stdout_fd, stderr_fd):
         """Initialise the iperf3 server instance"""
         super(Server, self).__init__(role='s', *args, **kwargs)
 
-[docs]    def run(self):
+    def run(self):
         """Run the iperf3 server instance.
 
         :rtype: instance of :class:`TestResult`
@@ -742,8 +742,7 @@ def output_to_screen(stdout_fd, stderr_fd):
             return None
 
 
-
-[docs]class TestResult(object):
+class TestResult(object):
     """Class containing iperf3 test results.
 
     :param text: The raw result from libiperf as text
