@@ -33,10 +33,10 @@ def client():
     client = iperf3.Client()
     client.duration = 10
     client.num_streams = 5
-    client.server_hostname = '10.11.170.14'
-    #client.bind_address = '10.10.1.80'
-    client.port = 5000
-    client.protocol = "UDP"
+    client.server_hostname = '10.11.170.4'
+    client.bind_address = '10.11.170.14'
+    client.port = 3000
+    client.protocol = "TCP"
     client.json_output = True
     print('Connecting to {0}:{1}'.format(client.server_hostname, client.port))
     result = client.run()
@@ -57,19 +57,19 @@ def client():
        # print('avg cpu load       {0}%\n'.format(result.local_cpu_total))
     
    # return ('Throughput {0}'.format(result.json))
-    result = str(result)
-    return result
+    #result = str(result)
+    #return result
 
 @app.route("/runserver")
 def server():
     print("starting server")
     server = iperf3.Server()
-    #server.bind_address = '10.10.1.80'
-    server.port = 5555
+    server.bind_address = '10.11.170.14'
+    server.port = 5050
     server.verbose = False
-   # while True:
-    result = server.run()
-    #print (result)
+    while True:
+        result = server.run()
+        print ("server running")
     if result.error:
         
         print (result.error)
@@ -78,8 +78,8 @@ def server():
         print(result)
         #return (result.text)
     print ("server closing")
-    result = str(result)
-    return (result)
+   # result = str(result)
+   # return (result)
 
 try:
     from queue import Queue
@@ -713,7 +713,7 @@ class Server(IPerf3):
            # """
             output_to_pipe(self._pipe_in)  # disable stdout
             error = self.lib.iperf_run_server(self._test)
-            output_to_screen(self._stdout_fd, self._stderr_fd)  # enable stdout
+           # output_to_screen(self._stdout_fd, self._stderr_fd)  # enable stdout
 
             # TODO json_output_string not available on earlier iperf3 builds
             # have to build in a version check using self.iperf_version
