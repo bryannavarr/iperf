@@ -11,7 +11,7 @@ import os
 import select
 import json
 import threading
-import multiprocessing
+from multiprocessing import process
 
 app = Flask(__name__)
 api = Api(app)
@@ -33,10 +33,10 @@ def client():
     client = iperf3.Client()
     client.duration = 10
     client.num_streams = 5
-    client.server_hostname = '10.11.170.4'
+    client.server_hostname = '10.11.170.14'
     client.bind_address = '10.11.170.14'
-    client.port = 3000
-    client.protocol = "TCP"
+    client.port = 5201
+    client.protocol = "tcp"
     client.json_output = True
     print('Connecting to {0}:{1}'.format(client.server_hostname, client.port))
     result = client.run()
@@ -55,8 +55,8 @@ def client():
        # print('bytes transmitted  {0}'.format(result.bytes))
        # print('jitter (ms)        {0}'.format(result.jitter_ms))
        # print('avg cpu load       {0}%\n'.format(result.local_cpu_total))
-    
-   # return ('Throughput {0}'.format(result.json))
+        
+    return ('Results{0}:'.format( result.json))
     #result = str(result)
     #return result
 
@@ -65,19 +65,20 @@ def server():
     print("starting server")
     server = iperf3.Server()
     server.bind_address = '10.11.170.14'
-    server.port = 5050
+    server.port = 5201
     server.verbose = False
+    print ("server running")
     while True:
-        result = server.run()
-        print ("server running")
-    if result.error:
+        server.run()
+    
+   # if result.error:
         
-        print (result.error)
-    else:
+    #    print (result.error)
+   # else:
         
-        print(result)
+       # print(result)
         #return (result.text)
-    print ("server closing")
+   
    # result = str(result)
    # return (result)
 
@@ -732,7 +733,7 @@ class Server(IPerf3):
         if self.json_output:
             data_queue = Queue()
 
-            t = threading.Thread(
+            t = multiprocessing.Process(
                 target=_run_in_thread, args=[self, data_queue]
             )
             t.daemon = True
@@ -855,7 +856,7 @@ class TestResult(object):
             self.omit = self.json['start']['test_start']['omit']
             self.duration = self.json['start']['test_start']['duration']
 
-            # system performance
+            i# system performance
             cpu_utilization_perc = self.json['end']['cpu_utilization_percent']
             self.local_cpu_total = cpu_utilization_perc['host_total']
             self.local_cpu_user = cpu_utilization_perc['host_user']
