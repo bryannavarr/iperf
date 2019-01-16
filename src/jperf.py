@@ -31,8 +31,8 @@ def iperf():
 def client():
     print('starting client')
     client = iperf3.Client()
-    client.duration = 10
-    client.num_streams = 5
+    client.duration = 1
+    client.num_streams = 1
     client.server_hostname = '10.11.170.14'
     client.bind_address = '10.11.170.14'
     client.port = 5201
@@ -51,33 +51,41 @@ def client():
        # return ('Throughput {0}'.format(result.json))
         print('')
         print('Test Completed')
+       # print('throughput:{0}'.format(result.json.bits_per_second))
        # print('started at         {0}'.format(result.time))
        # print('bytes transmitted  {0}'.format(result.bytes))
        # print('jitter (ms)        {0}'.format(result.jitter_ms))
        # print('avg cpu load       {0}%\n'.format(result.local_cpu_total))
-        
-    return ('Results{0}:'.format( result.json))
+    response = app.response_class(response = json.dumps(result.text),status=200,mimetype="application/json")    
+    return (response)
+    #'Reults:{0}'.format(result.json)i
     #result = str(result)
     #return result
 
-@app.route("/runserver")
-def server():
-    print("starting server")
-    server = iperf3.Server()
-    server.bind_address = '10.11.170.14'
-    server.port = 5201
-    server.verbose = False
-    print ("server running")
-    while True:
-        server.run()
+#SERVER APIT DOES NOT WORK. SEE https://github.com/thiezn/iperf3-python/issues for solution ideas
+#app.route("/runserver")
+#def server():
+   #
+   # print("starting server")
+   # server = iperf3.Server()
+   # server.bind_address = '10.11.170.14'
+   # server.port = 5201
+   # server.verbose = False
+   # server.json_output = True
+   # print ("server running")
+   # server.run()
+   # result=server.run()
+   # return ('Results{0}'.format(result.json))
     
    # if result.error:
         
-    #    print (result.error)
+   #     print (result.error)
    # else:
         
-       # print(result)
-        #return (result.text)
+   #     print("Test Completed")
+    #response = app.response_class(response = json.dumps(result.text), status = 200, mimetype="application/json")
+   # return (response)
+       # return (result.text)
    
    # result = str(result)
    # return (result)
@@ -719,10 +727,10 @@ class Server(IPerf3):
             # TODO json_output_string not available on earlier iperf3 builds
             # have to build in a version check using self.iperf_version
             # The following line should work on later versions:
-            # data = c_char_p(
-            #    self.lib.iperf_get_test_json_output_string(self._test)
-            # ).value
-            data = read_pipe(self._pipe_out)
+            data = c_char_p(
+            self.lib.iperf_get_test_json_output_string(self._test)
+            ).value
+           # data = read_pipe(self._pipe_out)
 
             if not data or error:
                 data = '{"error": "%s"}' % self._error_to_string(self._errno)
@@ -929,4 +937,4 @@ class TestResult(object):
 
 
 if __name__ == "__main__":
-    app.run(host='10.11.170.14', port='5003', debug=True)
+    app.run(host='10.11.170.14', port='5004', debug=True)
